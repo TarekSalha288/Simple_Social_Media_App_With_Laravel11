@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -20,3 +21,4 @@ Route::middleware('auth')->group(function () {
 Route::get('dashboard/edit', [UserController::class,'editupdate'])->name('edit');
 Route::put('update', [UserController::class,'update'])->name('update');
 require __DIR__.'/auth.php';
+Route::get('send/{id}',[MessageController::class,'store']);

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Broadcast;
 
  class User extends Authenticatable implements JWTSubject
 {
@@ -84,5 +85,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
         return $this->belongsToMany(Post::class,'user_favourite');
     }
-
+    public function mutualFollowers()
+    {
+        return $this->followers()->whereIn('users.id', function ($query) {
+            $query->select('user_id')
+                  ->from('user_folowers')
+                  ->where('follower_id', auth()->id()); // Get followers of the authenticated user
+        });
+    }
+    public function chats()
+    {
+        return Chat::where('sender_id', $this->id)
+                   ->orWhere('receiver_id', $this->id)
+                   ;
+    }
 }

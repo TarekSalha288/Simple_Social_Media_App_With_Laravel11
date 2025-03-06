@@ -48,12 +48,23 @@ class AuthController extends Controller
      */
     public function login()
     {
+        // Validate credentials
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        // Attempt to authenticate the user
+        if (!$token = auth()->attempt($credentials)) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
+        // Update the user's FCM token
+        $user = auth()->user();
+        if(request()->has('fcm')){
+            $user->fcm_token = request()->fcm;
+            $user->save();
+        }
+
+
+        // Return the token
         return $this->respondWithToken($token);
     }
 
@@ -100,12 +111,13 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
+
     protected function respondWithToken($token)
     {
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 43200
+            'expires_in' => auth()->factory()->getTTL() * 60 // Convert minutes to seconds
         ]);
     }
 

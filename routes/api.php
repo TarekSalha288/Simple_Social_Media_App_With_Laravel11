@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ChatController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -68,4 +70,11 @@ Route::delete('deleteuser/{id}',[UserController::class,'deleteUser']);
 Route::delete('deletePost/{id}',[UserController::class,'deletePost']);
 Route::put('makeadmin/{id}',[UserController::class,'makeAdmin']);
 });
-
+//////Chat
+Route::get('messages/{id}',[ChatController::class,'index']);
+Route::post('send/{id}',[ChatController::class,'store']);
+Route::get('users',[ChatController::class,'getUsers']);
+Route::get('chats',[ChatController::class,'chats']);
+Route::put('password',[ChatController::class,'updatePassword']);
+Route::put('updateInfo',[ChatController::class,'updateInfo']);
+Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api')->name('me');

@@ -17,24 +17,31 @@ public function edit($id){
 return response()->json($comment);
 }
 public function update(Request $request, $id){
-    $comment=Comment::where('user_id',auth()->user()->id)->where('id',$id)->first();
-    if($comment){
+    $comment=Comment::where('user_id',Auth::user()->id)->where('id',$id)->first();
+
+    if($comment ){
+        $owner=$comment->user;
+        if($owner){
 $request->validate(['body'=>'required']);
 Comment::where('id',$id)->update(['body'=> $request->body]);
 return response()->json(['message'=> 'Updated Comment']);
+        }
 }
-else{
+
     return response()->json(['message'=> 'You Can\'t Update This Comment']);
-}
+
 }
 public function delete($id){
-    $comment=Comment::where('user_id',auth()->user()->id)->where('id',$id)->first();
+    $comment=Comment::where('user_id',Auth::user()->id)->where('id',$id)->first();
     if($comment){
+        $owner=$comment->user;
+        $post_owner=$comment->post->user;
+        if($post_owner || $owner){
     Comment::where('id',$id)->delete();
-    return response()->json(['message'=> 'Deleted Comment Done']);}
-    else{
+    return response()->json(['message'=> 'Deleted Comment Done']);}}
+
         return response()->json(['message'=> 'You Can\'t Delete This Comment']);
-    }
+
 }
 public function replay(Request $request, $id){
     ReplayComment::create([

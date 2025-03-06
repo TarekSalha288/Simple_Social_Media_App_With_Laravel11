@@ -15,9 +15,12 @@ class UserController extends Controller
 {
     use UploadImageTrait;
     public function follow($id){
+        $user=User::find($id);
+        if(!$user)
+        return response()->json(['message'=>"User Not Found"],400);
         $flag=DB::table('user_folowers')->where('user_id',Auth::user()->id)->where('follower_id',$id)->first();
         if($flag){
-            return response()->json('You Can\'t Follow This User Again' );
+            return response()->json(["message"=>'You Can\'t Follow This User Again' ],400);
         }
         if(Auth::user()->id==$id){
             return response()->json('You Can\'t Follow Your Self' );
