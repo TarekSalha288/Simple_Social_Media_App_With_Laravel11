@@ -13,4 +13,7 @@ class Like extends Model
     {
         return $this->belongsTo(Post::class);
     }
+    public function post() :BelongsTo{
+        return $this->belongsTo(Post::class,'post_id');
+    }
 }

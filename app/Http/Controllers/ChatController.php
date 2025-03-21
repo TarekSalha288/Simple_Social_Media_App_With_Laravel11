@@ -41,8 +41,6 @@ return response()->json(["message"=>"No Messages Yet"]);
         if (!$receiver) {
             return response()->json(['error' => 'Receiver not found'], 404);
         }
-
-        // Find or create a chat between the sender and receiver
         $chat = Chat::where(function($query) use ($sender, $id) {
             $query->where('sender_id', $sender->id)
                   ->where('receiver_id', $id);
@@ -79,11 +77,11 @@ return response()->json(["message"=>"No Messages Yet"]);
 
         // Send FCM notification if the receiver has an FCM token
         if ($receiver->fcm_token) {
-            $this->fcmService->sendNotification(
-                $receiver->fcm_token,
-                'New message From ' . $receiver->email,
-                $message->message
-            );
+        //     $this->fcmService->sendNotification(
+        //         $receiver->fcm_token,
+        //         'New message From ' . $receiver->email,
+        //         $message->message
+        //     );
             return response()->json([$messageData], 201);
         }
 

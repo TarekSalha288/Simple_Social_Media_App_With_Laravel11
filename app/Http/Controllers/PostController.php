@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PostCreated;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Comment;
@@ -30,7 +31,7 @@ class PostController extends Controller
             $post->path = $path;
         }
         $post->save();
-
+     broadcast(new PostCreated($post,$user->followers))->toOthers();
 
         return response()->json('Post Created ');
     }
@@ -80,32 +81,73 @@ class PostController extends Controller
     {
         $user = Auth::user();
         $followings = $user->followings;
-        $allPosts = [];
+        $allPosts = collect();
         foreach ($followings as $following) {
-            foreach ($following->posts as $post) {
+            $posts = $following->posts()->orderBy('created_at', 'desc')->get();
+            foreach ($posts as $post) {
                 $post->user;
                 $num_likes = $post->Likes()->count();
                 $num_comments = $post->comments()->count();
                 $num_fusers = $post->fusers()->count();
                 $likedByUser = $post->Likes->contains('user_id', $user->id);
-                $post = $post->toArray();
-                unset($post['likes']);
+                $postArray = $post->toArray();
+                unset($postArray['likes']);
+
                 $allPosts[] = [
-                    'post' => $post,
+                    'post' => $postArray,
                     'liked_by_user' => $likedByUser,
                     'Likes' => $num_likes,
-                    'Commments' => $num_comments,
+                    'Comments' => $num_comments,
                     'Favourites' => $num_fusers,
                 ];
             }
         }
- $currentPage = LengthAwarePaginator::resolveCurrentPage();
- $perPage = 2;
- $allPosts=collect($allPosts);
- $currentPageItems = $allPosts->forPage($currentPage, $perPage);
- $paginatedPosts = new LengthAwarePaginator($currentPageItems, $allPosts->count(), $perPage, $currentPage,[
-     'path' => request()->url()]);
-        return response()->json( $paginatedPosts);
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 2;
+        $currentPageItems = collect($allPosts)->slice(($currentPage - 1) * $perPage, $perPage);
+        $paginatedPosts = new LengthAwarePaginator(
+            $currentPageItems,
+            count($allPosts),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url()]
+        );
+
+        return response()->json($paginatedPosts);
+    }
+    public function showTrendPosts(){
+        $posts = Post::all();
+        $trends = [];
+        foreach ($posts as $post) {
+            $likes = $post->likes;
+            $flag = false;
+            if(sizeof($likes)>=100){
+            foreach ($likes as $like) {
+                if ($like->user_id == Auth::user()->id) {
+                    $flag = true;
+                }
+            }
+            $trends[] = [
+                'post' => [
+                    'id' => $post->id,
+                    'body' => $post->body,
+                    'path' => $post->path,
+                    'user' => $post->user,
+                    'created_at' => $post->created_at,
+                    'updated_at' => $post->updated_at,
+                    'likesNum' => sizeof($likes),
+                    'commentNum' => sizeof($post->comments),
+                    'isLiked' => $flag,
+                ],
+
+            ];
+        }}
+        if (empty($trends)) {
+            return response()->json(['message' => "No Trend Posts Yet"], 400);
+        }
+
+        return response()->json(['trend posts' => $trends], 200);
     }
     public function post($id)
     {

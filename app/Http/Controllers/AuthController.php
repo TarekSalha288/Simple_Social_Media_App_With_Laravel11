@@ -7,7 +7,9 @@ use App\Models\User;
 use App\UploadImageTrait;
 use Illuminate\Support\Facades\Validator;
 use  Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
+use App\Mail\TowFactorMail;
 class AuthController extends Controller
 {
  use UploadImageTrait;
@@ -17,6 +19,7 @@ class AuthController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function register() {
+        User::where('email', request()->email)->whereNotNull('code')->delete();
         $validator = Validator::make(request()->all(), [
             'name' => 'required',
             'user_name'=>'required|unique:users,id',
@@ -36,8 +39,15 @@ class AuthController extends Controller
         $user->user_name = request()->user_name;
         $path=$this->uploadImage( request(),'users',$user->user_name);
         $user->image_path = $path;
+        $user->generateCode();
+        Mail::to($user->email)->send(new TowFactorMail($user->code, $user->firstName));
         $user->save();
-        return response()->json($user, 201);
+        $credentials = request(['email', 'password']);
+        if (!$token = auth()->attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        return response()->json(['user'=>$user,'token'=>$token], 201);
+
     }
 
 
@@ -48,10 +58,16 @@ class AuthController extends Controller
      */
     public function login()
     {
-        // Validate credentials
-        $credentials = request(['email', 'password']);
+        $validator = Validator::make(request()->all(), [
+            'email' => 'required|email',
+            'password' => 'required|min:8',
+        ]);
 
-        // Attempt to authenticate the user
+        if($validator->fails()){
+            return response()->json($validator->errors()->toJson(), 400);
+        }
+
+        $credentials = request(['email', 'password']);
         if (!$token = auth()->attempt($credentials)) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
@@ -120,6 +136,28 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 60 // Convert minutes to seconds
         ]);
     }
-
+    public function verify(){
+        $validator = Validator::make(request()->all(), [
+            'code' => 'required',
+        ]);
+         if ($validator->fails()) {
+             return response()->json($validator->errors()->toJson(), 400);
+ }
+        if(auth()->check()){
+        $user=auth()->user();
+        if($user->expire_at < now()){
+            User::destroy($user->id);
+        return response()->json(['message'=>'You Should SignUp Again'],401);
+        }
+       if(request()->input('code')== $user->code){
+         $user->code=null;
+         $user->expire_at=null;
+         $user->save();
+        return response()->json(['message'=>'Code Is Correct'],200);
+       }
+       return response()->json(['message'=>'Code Is Not Correct '],400);
+    }
+    return response()->json(['message'=>'You Should Signup Before '],400);
+    }
 
 }
