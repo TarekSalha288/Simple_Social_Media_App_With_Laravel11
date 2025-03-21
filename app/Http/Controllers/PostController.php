@@ -122,7 +122,7 @@ class PostController extends Controller
         foreach ($posts as $post) {
             $likes = $post->likes;
             $flag = false;
-            if(sizeof($likes)>=100){
+            if(sizeof($likes)>=0){
             foreach ($likes as $like) {
                 if ($like->user_id == Auth::user()->id) {
                     $flag = true;

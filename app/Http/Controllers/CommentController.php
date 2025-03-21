@@ -44,12 +44,12 @@ public function delete($id){
 
 }
 public function replay(Request $request, $id){
-    ReplayComment::create([
+   $replay= ReplayComment::create([
         'body'=> $request->body,
         'user_id'=>Auth::user()->id,
         'comment_id'=>$id,
     ]);
-    return response()->json(['message'=> 'Updated Replay Comment']);
+    return response()->json(['comment'=>$replay,'message'=> 'Updated Replay Comment']);
 }
 public function like($id){
 LikeComment::create([
