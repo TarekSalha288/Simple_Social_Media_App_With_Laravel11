@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MyComment;
+use App\Notifications\MyCommentNot;
 use Illuminate\Http\Request;
 use App\Models\Comment;
 use App\Models\LikeComment;
+use App\Models\Post;
 use App\Models\ReplayComment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+
 class CommentController extends Controller
 
 
@@ -44,19 +49,26 @@ public function delete($id){
 
 }
 public function replay(Request $request, $id){
+    $user= Post::find($id)->user;
    $replay= ReplayComment::create([
         'body'=> $request->body,
         'user_id'=>Auth::user()->id,
         'comment_id'=>$id,
     ]);
+broadcast(new MyComment(Auth::user()->user_name." Replay To Your Comment",$id,$user->id))->toOthers();
+Notification::send($user,new MyCommentNot(Auth::user()->user_name." Replay To Your Comment",$id,$user->id));
+
     return response()->json(['comment'=>$replay,'message'=> 'Updated Replay Comment']);
 }
 public function like($id){
+    $user= Post::find($id)->user;
 LikeComment::create([
     'user_id'=>Auth::user()->id,
     'comment_id'=>$id,
     'active'=>1,
 ]);
+broadcast(new MyComment(Auth::user()->user_name." Like Your Comment",$id,$user->id))->toOthers();
+Notification::send($user,new MyCommentNot(Auth::user()->user_name." Like Your Comment",$id,$user->id));
 return response()->json(['message'=> 'Liked Comment Done']);
 }
 public function dislike($id){

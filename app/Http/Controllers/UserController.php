@@ -207,5 +207,8 @@ public function userPosts($id){
      User::findOrFail($id)->update(['status'=>1]);
      return response()->json('User Become Admin');
     }
+    public function notification(){
+        return Auth::user()->notifications;
+    }
 
 }

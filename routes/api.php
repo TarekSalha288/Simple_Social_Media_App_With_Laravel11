@@ -75,6 +75,7 @@ Route::middleware([TowFactor::class])->group(function(){
     Route::delete('deleteaccount',[UserController::class,'deleteAccount']);
     Route::post('/suggestedUsers',[UserController::class,'suggestedUsers']);
     Route::put('/updateuser',[UserController::class,'update']);
+    Route::get('/notify',[UserController::class,'notification']);
 
     ////////////////////////////////////////////////////////////////////////////////////////
 

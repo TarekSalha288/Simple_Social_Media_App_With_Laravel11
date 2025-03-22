@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MyPost;
 use App\Events\PostCreated;
 use App\Models\Post;
 use App\Models\User;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\MyPostNot;
 
 class PostController extends Controller
 {
@@ -199,18 +202,24 @@ class PostController extends Controller
     }
     public function addComment(Request $request, $id)
     {
-        $comment=Comment::create(['post_id' => $id, 'user_id' => Auth::user()->id, 'body' => $request->body, 'created_at' => now(), 'updated_at' => now()]);
+        $user=Post::find($id)->user;
+       $comment=Comment::create(['post_id' => $id, 'user_id' => Auth::user()->id, 'body' => $request->body, 'created_at' => now(), 'updated_at' => now()]);
    $comment->user;
+   broadcast(new MyPost(Auth::user()->user_name." Add Comment To Your Post",$id,$user->id))->toOthers();
+        Notification::send($user,new MyPostNot(Auth::user()->user_name." Add Comment To Your Post",$id,$user->id));
         return response()->json($comment);
     }
 
     public function addLike($id)
     {
         $like = Like::where('user_id', Auth::user()->id)->where('post_id', $id)->first();
+        $user=Post::find($id)->user;
         if ($like) {
             return response()->json('You Have Already Liked This Post');
         }
         Like::create(['post_id' => $id, 'user_id' => Auth::user()->id, 'active' => 1]);
+        broadcast(new MyPost(Auth::user()->user_name." Liked Your Post",$id,$user->id))->toOthers();
+        Notification::send($user,new MyPostNot(Auth::user()->user_name." Liked Your Post",$id,$user->id));
         return response()->json('Liked Added');
     }
 
