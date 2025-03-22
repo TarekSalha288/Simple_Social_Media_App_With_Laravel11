@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+
 class PostController extends Controller
 {
     use UploadImageTrait;
@@ -77,57 +78,69 @@ class PostController extends Controller
         return response()->json('You Can\'t Delete This Post');
     }
 
+
+
     public function show_followings_posts()
     {
         $user = Auth::user();
         $followings = $user->followings;
         $allPosts = collect();
+
         foreach ($followings as $following) {
             $posts = $following->posts()->orderBy('created_at', 'desc')->get();
+
             foreach ($posts as $post) {
-                $post->user;
-                $num_likes = $post->Likes()->count();
+                $num_likes = $post->likes()->count();
                 $num_comments = $post->comments()->count();
                 $num_fusers = $post->fusers()->count();
-                $likedByUser = $post->Likes->contains('user_id', $user->id);
-                $postArray = $post->toArray();
-                unset($postArray['likes']);
+                $likedByUser = $post->likes()->where('user_id', $user->id)->exists();
 
                 $allPosts[] = [
-                    'post' => $postArray,
-                    'liked_by_user' => $likedByUser,
-                    'Likes' => $num_likes,
-                    'Comments' => $num_comments,
-                    'Favourites' => $num_fusers,
+                    'post' => [
+                        'id' => $post->id,
+                        'body' => $post->body,
+                        'path' => $post->path,
+                        'user' => $post->user,
+                        'created_at' => $post->created_at,
+                        'updated_at' => $post->updated_at,
+                        'likesNum' => $num_likes,
+                        'commentNum' => $num_comments,
+                        'favouritesNum' => $num_fusers,
+                        'isLiked' => $likedByUser
+                    ]
                 ];
             }
         }
 
+        if ($allPosts->isEmpty()) {
+            return response()->json(['message' => 'No Followings Posts Yet'], 400);
+        }
+
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $perPage = 2;
-        $currentPageItems = collect($allPosts)->slice(($currentPage - 1) * $perPage, $perPage);
+        $currentPageItems = $allPosts->slice(($currentPage - 1) * $perPage, $perPage);
         $paginatedPosts = new LengthAwarePaginator(
             $currentPageItems,
-            count($allPosts),
+            $allPosts->count(),
             $perPage,
             $currentPage,
             ['path' => request()->url()]
         );
 
-        return response()->json($paginatedPosts);
+        return response()->json(['posts' => $paginatedPosts], 200);
     }
-    public function showTrendPosts(){
-        $posts = Post::all();
-        $trends = [];
+
+    public function showTrendPosts()
+    {
+        $user = Auth::user();
+        $posts = Post::with(['likes', 'comments', 'user'])->get();
+        $trends = collect();
+
         foreach ($posts as $post) {
-            $likes = $post->likes;
-            $flag = false;
-            if(sizeof($likes)>=0){
-            foreach ($likes as $like) {
-                if ($like->user_id == Auth::user()->id) {
-                    $flag = true;
-                }
-            }
+            $num_likes = $post->likes()->count();
+            $num_comments = $post->comments()->count();
+            $likedByUser = $post->likes()->where('user_id', $user->id)->exists();
+
             $trends[] = [
                 'post' => [
                     'id' => $post->id,
@@ -136,19 +149,31 @@ class PostController extends Controller
                     'user' => $post->user,
                     'created_at' => $post->created_at,
                     'updated_at' => $post->updated_at,
-                    'likesNum' => sizeof($likes),
-                    'commentNum' => sizeof($post->comments),
-                    'isLiked' => $flag,
-                ],
-
+                    'likesNum' => $num_likes,
+                    'commentNum' => $num_comments,
+                    'isLiked' => $likedByUser
+                ]
             ];
-        }}
-        if (empty($trends)) {
-            return response()->json(['message' => "No Trend Posts Yet"], 400);
         }
 
-        return response()->json(['trend posts' => $trends], 200);
+        if ($trends->isEmpty()) {
+            return response()->json(['message' => 'No Trend Posts Yet'], 400);
+        }
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 2;
+        $currentPageItems = $trends->slice(($currentPage - 1) * $perPage, $perPage);
+        $paginatedTrends = new LengthAwarePaginator(
+            $currentPageItems,
+            $trends->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url()]
+        );
+
+        return response()->json(['trend posts' => $paginatedTrends], 200);
     }
+
     public function post($id)
     {
         $post = Post::where('id', $id)->first();
