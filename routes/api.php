@@ -37,8 +37,8 @@ Route::put('makeadmin/{id}',[UserController::class,'makeAdmin']);
 Route::post('verify',[AuthController::class,'verify']);
 Route::middleware([TowFactor::class])->group(function(){
     Route::post('password/request', [PasswordController::class, 'sendConfirmationEmail']);  // Send email
-    Route::get('password/confirm/{token}', [PasswordController::class, 'confirmReset']); // Confirm password reset
-    Route::post('password/reset/{token}', [PasswordController::class, 'resetPassword']);
+    Route::post('password/confirm', [PasswordController::class, 'confirmReset']); // Confirm password reset
+    Route::post('password/reset', [PasswordController::class, 'resetPassword']);
     /////////////////////////////////////////////////////////////////////////////////
     Route::post('/createpost',[PostController::class,'create_post']);
     Route::put('updatepost/{id}',[PostController::class,'update_post']);

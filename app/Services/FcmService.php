@@ -16,7 +16,7 @@ class FcmService
     public function __construct()
     {
         // Absolute path to the Firebase service account file
-        $serviceAccountPath = storage_path('app/firebase/real-time-chat-ca928-firebase-adminsdk-fbsvc-28c88d0234.json');
+        $serviceAccountPath = storage_path('app/firebase/socialmediaapp.json');
 
         // Initialize Firebase using service account key
         $firebase = (new Factory)

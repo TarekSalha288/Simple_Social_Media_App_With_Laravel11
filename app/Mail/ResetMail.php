@@ -17,9 +17,11 @@ class ResetMail extends Mailable
      * Create a new message instance.
      */
     private $res;
-    public function __construct($resetLink)
+    private $token;
+    public function __construct($resetLink,$token)
     {
         $this->res=$resetLink;
+        $this->token=$token;
     }
 
     /**
@@ -57,6 +59,7 @@ class ResetMail extends Mailable
     {
         return $this->subject('Password Reset Confirmation')
                     ->view('emails.password_reset_confirmation')
-                    ->with(['resetLink' => $this->res]);
+                    ->with(['resetLink' => $this->res,'token'=>$this->token]);
+
     }
 }

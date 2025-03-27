@@ -28,14 +28,15 @@ class PasswordController extends Controller
                 'created_at' => now(),
             ]
         );
-        $resetLink = url("/api/password/confirm/{$token}");
-        Mail::to($request->email)->send(new ResetMail($resetLink));
+        $resetLink = url("/api/password/confirm");
+        Mail::to($request->email)->send(new ResetMail($resetLink,$token));
         return response()->json(['message' => 'Confirmation email sent!'], 200);}
         return response()->json('You Don\'t Have Account');
     }
 
-    public function confirmReset($token)
+    public function confirmReset()
     {
+        $token=request()->input('token');
         $resetRequest = DB::table('password_resets')->where('token', $token)->first();
         if (!$resetRequest) {
             return response()->json(['message' => 'Invalid or expired token.'], 400);
@@ -46,12 +47,14 @@ class PasswordController extends Controller
             'token' => $token
         ], 200);
     }
-    public function resetPassword(Request $request, $token)
+    public function resetPassword(Request $request)
     {
         $request->validate([
             'password' => 'required|confirmed|min:8',
             'password_confirmation' => 'required',
+            'token'=>'required',
         ]);
+        $token=request()->input('token');
         $resetRequest = DB::table('password_resets')->where('token', $token)->first();
         if (!$resetRequest) {
             return response()->json(['message' => 'Invalid or expired token.'], 400);
